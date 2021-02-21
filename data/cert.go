@@ -1,6 +1,7 @@
 package data
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -107,7 +108,10 @@ func NewCertificate(pem string) (*Certificate, error) {
 	// parse PEM string
 	x509Cert, err := ParseX509FromPEM(pem)
 	if err != nil {
-		return nil, err
+		return nil, &DBObjectValidationError{
+			Err: err,
+			Msg: fmt.Sprintf("Invalid PEM: %s", err.Error()),
+		}
 	}
 
 	return &Certificate{
@@ -128,49 +132,5 @@ func NewCertificate(pem string) (*Certificate, error) {
 
 }
 
-// Tag defines Tag for X509 Cert
-// swagger:model
-type Tag struct {
-	gorm.Model
-	// the id for the Tag
-	//
-	// required: false
-	ID uuid.UUID `json:"id" gorm:"type:uuid;primary_key;"`
-
-	// the Tag name
-	//
-	// required: false
-	Name string `json:"name"  gorm:"uniqueIndex" validate:"required,excludesall= "`
-
-	// the List of Certificates for the tag
-	//
-	// required: false
-	Certificates []Certificate `json:"_"  gorm:"many2many:tags_ref;"`
-
-	// the CreatedAt timestamp for the tag
-	//
-	// required: false
-	CreatedAt time.Time `json:"-" `
-
-	// the UpdatedAt timestamp for the tag
-	//
-	// required: false
-	UpdatedAt time.Time `json:"-" `
-}
-
-// BeforeCreate will set a UUID rather than numeric ID.
-func (tag *Tag) BeforeCreate(tx *gorm.DB) (err error) {
-	if tag.ID == uuid.Nil {
-		uuid := uuid.New()
-		tag.ID = uuid
-	}
-
-	return
-}
-
-// NewTag create a new tag struct
-func NewTag(name string) (*Tag, error) {
-	return &Tag{
-		Name: name,
-	}, nil
-}
+// Certificates a list of Certificate
+type Certificates []*Certificate

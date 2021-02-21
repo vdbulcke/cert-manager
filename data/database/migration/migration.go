@@ -1,14 +1,19 @@
 package migration
 
 import (
+	"github.com/hashicorp/go-hclog"
 	"github.com/vdbulcke/cert-manager/data"
-	"github.com/vdbulcke/cert-manager/database"
+	"gorm.io/gorm"
 )
 
 // DBMigration initialize DB
-func DBMigration(db *database.DB) {
+func DBMigration(db *gorm.DB, logger hclog.Logger) error {
 
-	// Create DB Model
-	db.AutoMigrate(&data.Certificate{})
-	db.AutoMigrate(&data.Tag{})
+	err := db.AutoMigrate(&data.Tag{}, &data.Certificate{})
+	if err != nil {
+		logger.Error("Error Running DB Migration", "error", err)
+		return err
+	}
+
+	return nil
 }

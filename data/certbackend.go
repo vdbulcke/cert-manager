@@ -28,19 +28,17 @@ func NewCertBackend(logger hclog.Logger, db *gorm.DB, v *Validation) *CertBacken
 	}
 }
 
-// Tags a list of Tag
-type Tags []*Tag
-
-// Certificates a list of Certificate
-type Certificates []*Certificate
-
 //
-// Cert functions
+// Cert CRUD functions
+// Create: CreateCertificate, CreateCertificateWithTags
+// Read:   GetCertByID, GetCertByFingerprint, ListCerts
+// Update: SetCertTagNameByID, SetCertTagsNameByID
+// Delete: DeleteCertByID, DeleteCertPendingRecords
 //
 
 // CreateCertificate create a new Certificate from pem and insert it into DB
 func (certBackend *CertBackend) CreateCertificate(pem string) (*Certificate, error) {
-	certBackend.logger.Debug("Creating Cert...")
+	certBackend.logger.Debug("CreateCertificate: Creating Cert...")
 
 	cert, err := NewCertificate(pem)
 	if err != nil {
@@ -49,7 +47,13 @@ func (certBackend *CertBackend) CreateCertificate(pem string) (*Certificate, err
 
 	validationErr := certBackend.v.Validate(cert)
 	if validationErr != nil {
-		return nil, errors.New(strings.Join(validationErr.Errors(), "\n"))
+		return nil, &DBObjectValidationError{Msg: strings.Join(validationErr.Errors(), "\n")}
+	}
+
+	// lookup if cert already exist
+	foundCert, _ := certBackend.GetCertByFingerprint(cert.SHA256)
+	if foundCert != nil {
+		return foundCert, &DBObjectAlreadyExist{ID: foundCert.ID.String()}
 	}
 
 	// Create new entry
@@ -62,9 +66,24 @@ func (certBackend *CertBackend) CreateCertificate(pem string) (*Certificate, err
 	return cert, nil
 }
 
+// CreateCertificateWithTags create a new Certificate from pem and assigned some tags
+func (certBackend *CertBackend) CreateCertificateWithTags(pem string, tags []string) (*Certificate, error) {
+	certBackend.logger.Debug("CreateCertificateWithTags: Creating Cert...")
+
+	// Create cert in db
+	cert, err := certBackend.CreateCertificate(pem)
+	if err != nil {
+		return nil, err
+	}
+
+	// for simplicity use update method SetCertTagsNameByID on
+	// newly created cert
+	return certBackend.SetCertTagsNameByID(cert.ID, tags)
+}
+
 // GetCertByID return Tag (without associated cert)
 func (certBackend *CertBackend) GetCertByID(uuid uuid.UUID) (*Certificate, error) {
-	certBackend.logger.Debug("Getting Certificate...")
+	certBackend.logger.Debug("GetCertByID: Getting Certificate...")
 
 	var cert Certificate
 	// preload the tags
@@ -75,17 +94,15 @@ func (certBackend *CertBackend) GetCertByID(uuid uuid.UUID) (*Certificate, error
 
 	// check if result is empty
 	if result.RowsAffected == 0 {
-		return nil, errors.New("Cert not found " + uuid.String())
+		return nil, &DBObjectNotFound{ID: uuid.String()}
 	}
-
-	// certBackend.logger.Info("Found cert", cert)
 
 	return &cert, nil
 }
 
 // GetCertByFingerprint return Tag (without associated cert)
 func (certBackend *CertBackend) GetCertByFingerprint(sha256 string) (*Certificate, error) {
-	certBackend.logger.Debug("Getting Certificate...")
+	certBackend.logger.Debug("GetCertByFingerprint: Getting Certificate...")
 
 	var cert Certificate
 
@@ -96,23 +113,37 @@ func (certBackend *CertBackend) GetCertByFingerprint(sha256 string) (*Certificat
 
 	// check if result is empty
 	if result.RowsAffected == 0 {
-		return nil, errors.New("Cert not found " + sha256)
+		return nil, &DBObjectNotFound{ID: sha256}
 	}
 
 	return &cert, nil
 }
 
-// SetCertTagNameByID return Tag (without associated cert)
-func (certBackend *CertBackend) SetCertTagNameByID(uuid uuid.UUID, tagName string) (*Certificate, error) {
-	certBackend.logger.Debug("Setting tag for Certificate...")
+// ListCerts returns all certs with their assosicated tags
+func (certBackend *CertBackend) ListCerts() (Certificates, error) {
 
-	// getting tag
-	tag, err := certBackend.GetTagByName(tagName)
-	if err != nil {
-		return nil, err
+	// List of Certificates
+	var certList Certificates
+
+	result := certBackend.db.Preload(clause.Associations).Find(&certList)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
-	certBackend.logger.Info("getTabGyName", tag)
+	return certList, nil
+}
+
+// SetCertTagNameByID return Tag (without associated cert)
+func (certBackend *CertBackend) SetCertTagNameByID(uuid uuid.UUID, tagName string) (*Certificate, error) {
+	certBackend.logger.Debug("SetCertTagNameByID: Setting tag for Certificate...")
+
+	// call SetCertTagsNameByID with list containing only a single tag
+	return certBackend.SetCertTagsNameByID(uuid, []string{tagName})
+}
+
+// SetCertTagsNameByID update cert (uuid) with list of tags name
+func (certBackend *CertBackend) SetCertTagsNameByID(uuid uuid.UUID, tagList []string) (*Certificate, error) {
+	certBackend.logger.Debug("SetCertTagsNameByID: Setting tags for Certificate...", "tagList", tagList)
 
 	// get cert by uuid
 	cert, cerr := certBackend.GetCertByID(uuid)
@@ -120,90 +151,94 @@ func (certBackend *CertBackend) SetCertTagNameByID(uuid uuid.UUID, tagName strin
 		return nil, cerr
 	}
 
-	// check if tag already in list
-	for _, t := range cert.Tags {
-		if t.ID == tag.ID {
-			return cert, nil
+	// getting exitsing  tags
+	updatedTags := cert.Tags
+	for _, t := range tagList {
+		// lookup tag
+		tag, err := certBackend.getTagByNameWithoutPreload(t)
+		if err != nil {
+			// if one tag does not exist abort update
+			return nil, err
+		}
+
+		certBackend.logger.Debug("SetCertTagsNameByID: go tag", "tagName", t, "tag", tag)
+		// if not in tags list append to list
+		if !certBackend.isTagAlreadyInList(tag, cert.Tags) {
+			updatedTags = append(updatedTags, *tag)
+			certBackend.logger.Debug("SetCertTagsNameByID: ", "updatedTags", updatedTags, "cert.Tags", cert.Tags)
 		}
 	}
 
-	// add tag in tags list
-	newTags := append(cert.Tags, *tag)
-
-	tagErr := certBackend.db.Model(&cert).Association("Tags").Append(newTags)
+	// update the cert with tag new set of tags
+	tagErr := certBackend.db.Model(&cert).Association("Tags").Replace(updatedTags)
 	if tagErr != nil {
-		return nil, errors.New("error updating cert " + uuid.String() + " with tag " + tagName)
+		return nil, errors.New("error updating cert " + uuid.String() + " with tags " + strings.Join(tagList, ","))
 	}
-
-	// updateresult := certBackend.db.Save(&cert)
-	// if updateresult.Error != nil {
-	// 	return nil, errors.New("error updating cert " + uuid.String() + " with tag " + tagName)
-	// }
 
 	return cert, nil
 }
 
-//
-// Tag functions
-//
+// DeleteCertByID delete the certificate with uuid
+// This is only doing a soft delete (update the DeleteAt field)
+func (certBackend *CertBackend) DeleteCertByID(uuid uuid.UUID) error {
+	certBackend.logger.Debug("DeleteCertByID: Deleting cert", "uuid", uuid)
 
-// CreateTag create a new Tag
-func (certBackend *CertBackend) CreateTag(tagName string) (*Tag, error) {
-	certBackend.logger.Debug("Creating Tag...")
-
-	tag, err := NewTag(tagName)
-	if err != nil {
-		return nil, err
-	}
-	validationErr := certBackend.v.Validate(tag)
-	if validationErr != nil {
-		return nil, errors.New(strings.Join(validationErr.Errors(), "\n"))
-	}
-
-	// Create new entry
-	result := certBackend.db.Create(&tag)
+	result := certBackend.db.Delete(&Certificate{}, uuid)
 	if result.Error != nil {
-		// log.Fatal(result.Error)
-		return nil, result.Error
-	}
-
-	return tag, nil
-}
-
-// GetTagByName return Tag (without associated cert)
-func (certBackend *CertBackend) GetTagByName(tagName string) (*Tag, error) {
-	certBackend.logger.Debug("Getting Tag...")
-
-	var tag Tag
-
-	result := certBackend.db.Where("name = ?", tagName).First(&tag)
-	if result.Error != nil {
-		return nil, errors.New("Tag not found " + tagName)
+		return result.Error
 	}
 
 	// check if result is empty
 	if result.RowsAffected == 0 {
-		return nil, errors.New("Tag not found " + tagName)
+		return &DBObjectNotFound{ID: uuid.String()}
 	}
 
-	return &tag, nil
+	return nil
 }
 
-// GetTagByID return Tag (without associated cert)
-func (certBackend *CertBackend) GetTagByID(uuid uuid.UUID) (*Tag, error) {
-	certBackend.logger.Debug("Getting Tag...")
+// DeleteCertPendingRecords deletes all Certificates that where flagged for deleting
+func (certBackend *CertBackend) DeleteCertPendingRecords() error {
+	certBackend.logger.Debug("DeleteCertPendingRecords: Deletings cert")
 
-	var tag Tag
+	// lookup all unscoped
+	var unscopedCertificates Certificates
 
-	result := certBackend.db.Find(&tag, uuid)
+	// lookup the entries with a deleted_at not null
+	result := certBackend.db.Unscoped().Where("deleted_at IS NOT NULL").Find(&unscopedCertificates)
 	if result.Error != nil {
-		return nil, errors.New("Tag not found " + uuid.String())
+		return result.Error
 	}
 
-	// check if result is empty
-	if result.RowsAffected == 0 {
-		return nil, errors.New("Tag not found " + uuid.String())
+	// Iterate over unscoped certificates
+	// and delete them permanently
+	for _, c := range unscopedCertificates {
+		certBackend.logger.Debug("DeleteCertPendingRecords: Deletings cert", "cert", c)
+
+		// clearing all associated Tags with that cert
+		certBackend.db.Model(&c).Association("Tags").Clear()
+
+		result := certBackend.db.Unscoped().Delete(&c)
+		if result.Error != nil {
+			return result.Error
+		}
 	}
 
-	return &tag, nil
+	return nil
+}
+
+//
+// Helper function
+//
+
+// isTagAlreadyInList return true if tag in the tagList
+func (certBackend *CertBackend) isTagAlreadyInList(tag *Tag, tagList []Tag) bool {
+
+	// check if tag already in list
+	for _, t := range tagList {
+		if t.ID == tag.ID {
+			return true
+		}
+	}
+
+	return false
 }
