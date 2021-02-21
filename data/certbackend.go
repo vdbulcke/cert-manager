@@ -178,6 +178,52 @@ func (certBackend *CertBackend) SetCertTagsNameByID(uuid uuid.UUID, tagList []st
 	return cert, nil
 }
 
+// DeleteCertificateTagsByID remove  list of tags name from cert (uuid)
+func (certBackend *CertBackend) DeleteCertificateTagsByID(uuid uuid.UUID, tagList []string) (*Certificate, error) {
+	certBackend.logger.Debug("DeleteCertificateTagByID: removing tags from Certificate...", "tagList", tagList)
+
+	// get cert by uuid
+	cert, cerr := certBackend.GetCertByID(uuid)
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	// lookup  tags from list
+	var resolvedTags []Tag
+	for _, t := range tagList {
+		// lookup tag
+		tag, err := certBackend.getTagByNameWithoutPreload(t)
+		if err != nil {
+			// if one tag does not exist abort update
+			return nil, err
+		}
+
+		resolvedTags = append(resolvedTags, *tag)
+
+	}
+
+	// // getting exitsing  tags
+	// var updatedTags []Tag
+
+	// for _, existingTag := range cert.Tags {
+
+	// 	// check if existing tag is not in the list of tags to be removed
+	// 	if !certBackend.isTagAlreadyInList(&existingTag, resolvedTags) {
+	// 		updatedTags = append(updatedTags)
+	// 	}
+
+	// }
+
+	// update the cert with tag new set of tags
+	// tagErr := certBackend.db.Model(&cert).Association("Tags").Replace(updatedTags)
+	tagErr := certBackend.db.Model(&cert).Association("Tags").Delete(resolvedTags)
+	if tagErr != nil {
+		return nil, errors.New("error updating cert " + uuid.String() + " with tags " + strings.Join(tagList, ","))
+	}
+
+	return cert, nil
+}
+
 // DeleteCertByID delete the certificate with uuid
 // This is only doing a soft delete (update the DeleteAt field)
 func (certBackend *CertBackend) DeleteCertByID(uuid uuid.UUID) error {

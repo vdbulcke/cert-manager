@@ -7,15 +7,16 @@ import (
 	"github.com/vdbulcke/cert-manager/handlers/api"
 )
 
-// TODO:
-// swagger:route GET /certificate/CreateCertificate Certificate CreateCertificate
-// Return a list of tenants from the database
+// swagger:route POST /certificate/CreateCertificate Certificate CreateCertificate
+// Return newly Created Certificate from the database
 // responses:
 //	200: certificateResponse
+//  409: certificateResponse
 //	404: errorResponse
-//  401: errorResponse
+//  400: errorResponse
+//  500: errorResponse
 
-// CreateCertificate handles GET requests
+// CreateCertificate handles POSt requests
 func (h *APICertificateHandler) CreateCertificate(rw http.ResponseWriter, r *http.Request) *api.APIError {
 
 	// look up cert input (set by the middleware) in request context

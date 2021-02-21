@@ -188,13 +188,28 @@ TBj0/VLZjmmx6BEP3ojY+x1J96relc8geMJgEtslQIxq/H5COEBkEveegeGTLg==
 	}
 
 	//  lookup cert
-
 	foundCert, err = certBakcend.GetCertByID(cert.ID)
 	if err != nil {
 		t.Logf("Error creating Cert %s", err.Error())
 		t.FailNow()
 	}
 	logger.Error("found Cert", "cert", foundCert)
+
+	// testing delete tags
+	updatedCert, err := certBakcend.DeleteCertificateTagsByID(foundCert.ID, []string{"init_tag2", "init_tag3"})
+	if err != nil {
+		t.Logf("Error creating Cert %s", err.Error())
+		t.FailNow()
+	}
+	logger.Error("found Cert", "updatedCert", updatedCert)
+
+	//  lookup cert
+	// foundCert, err = certBakcend.GetCertByID(cert.ID)
+	// if err != nil {
+	// 	t.Logf("Error creating Cert %s", err.Error())
+	// 	t.FailNow()
+	// }
+	// logger.Error("found Cert", "cert", foundCert)
 
 	// just used to display logger
 	// t.FailNow()
