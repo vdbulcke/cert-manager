@@ -1,6 +1,6 @@
 // Package certificate  of Certificate API
 //
-// Documentation for Tenant API
+// Documentation for Certificate API
 //
 //	Schemes: http
 //	BasePath: /api/beta2/
