@@ -1,0 +1,555 @@
+basePath: /api/beta2/
+consumes:
+- application/json
+definitions:
+  APICertificateInput:
+    description: APICertificateInput input struct for certificate API
+    properties:
+      pem:
+        type: string
+        x-go-name: Pem
+      tags:
+        items:
+          type: string
+        type: array
+        x-go-name: Tags
+    type: object
+    x-go-package: github.com/vdbulcke/cert-manager/handlers/certificate
+  APICertificateTagInput:
+    description: APICertificateTagInput input struct for certificate API
+    properties:
+      tags:
+        items:
+          type: string
+        type: array
+        x-go-name: Tags
+    type: object
+    x-go-package: github.com/vdbulcke/cert-manager/handlers/certificate
+  APITagDescriptionInput:
+    description: APITagDescriptionInput  input for Tag Update API
+    properties:
+      description:
+        type: string
+        x-go-name: Description
+    type: object
+    x-go-package: github.com/vdbulcke/cert-manager/handlers/tag
+  APITagInput:
+    description: APITagInput input for Tag Creation API
+    properties:
+      description:
+        type: string
+        x-go-name: Description
+      name:
+        type: string
+        x-go-name: Name
+    type: object
+    x-go-package: github.com/vdbulcke/cert-manager/handlers/tag
+  Certificate:
+    description: Certificate defines a X509 Cert
+    properties:
+      DeletedAt:
+        $ref: '#/definitions/DeletedAt'
+      ID:
+        format: uint64
+        type: integer
+      authority_key_id:
+        description: the Authority Key ID of the pem cert
+        type: string
+        x-go-name: AKI
+      crl:
+        description: the CRL server of the pem cert
+        type: string
+        x-go-name: CRL
+      id:
+        $ref: '#/definitions/UUID'
+      is_ca:
+        description: if the pem cert  Is CA
+        type: boolean
+        x-go-name: IsCA
+      issuer:
+        description: the Issuer of the pem cert
+        type: string
+        x-go-name: Issuer
+      issuing_ca_url:
+        description: the Issuing CA URL of the pem cert
+        type: string
+        x-go-name: IssuingCAUrl
+      not_after:
+        description: the Not After validity of the pem cert
+        format: date-time
+        type: string
+        x-go-name: NotAfter
+      not_before:
+        description: the Not Before validity of the pem cert
+        format: date-time
+        type: string
+        x-go-name: NotBefore
+      ocsp:
+        description: the OCSP server of the pem cert
+        type: string
+        x-go-name: OCSP
+      pem:
+        description: the Raw PEM string of the pem cert
+        type: string
+        x-go-name: RawPEM
+      sans:
+        description: the List of Subject Alternative Names of the pem cert
+        type: string
+        x-go-name: SANs
+      serial_number:
+        description: the Serial Number of the pem cert
+        type: string
+        x-go-name: SerialNumber
+      sha256:
+        description: the sha256 of the pem cert
+        type: string
+        x-go-name: SHA256
+      sigalg:
+        description: the signature Algorithm of the pem cert
+        type: string
+        x-go-name: SignatureAlgorithm
+      subject:
+        description: the Subject of the pem cert
+        type: string
+        x-go-name: Subject
+      subject_key_id:
+        description: the Subject Key ID of the pem cert
+        type: string
+        x-go-name: SKI
+      tags:
+        description: the List of tags for the pem cert
+        items:
+          $ref: '#/definitions/Tag'
+        type: array
+        x-go-name: Tags
+    type: object
+    x-go-package: github.com/vdbulcke/cert-manager/data
+  Certificates:
+    description: Certificates a list of Certificate
+    items:
+      $ref: '#/definitions/Certificate'
+    type: array
+    x-go-package: github.com/vdbulcke/cert-manager/data
+  DeletedAt:
+    $ref: '#/definitions/NullTime'
+  GenericAPIError:
+    description: GenericAPIError is a generic error message returned by a server
+    properties:
+      error:
+        type: string
+        x-go-name: Error
+      message:
+        type: string
+        x-go-name: Message
+    type: object
+    x-go-package: github.com/vdbulcke/cert-manager/handlers/api
+  Model:
+    description: |-
+      Model a basic GoLang struct which includes the following fields: ID, CreatedAt, UpdatedAt, DeletedAt
+      It may be embedded into your model or you may build your own model without it
+      type User struct {
+      gorm.Model
+      }
+    properties:
+      CreatedAt:
+        format: date-time
+        type: string
+      DeletedAt:
+        $ref: '#/definitions/DeletedAt'
+      ID:
+        format: uint64
+        type: integer
+      UpdatedAt:
+        format: date-time
+        type: string
+    type: object
+    x-go-package: gorm.io/gorm
+  NullTime:
+    description: |-
+      NullTime implements the Scanner interface so
+      it can be used as a scan destination, similar to NullString.
+    properties:
+      Time:
+        format: date-time
+        type: string
+      Valid:
+        type: boolean
+    title: NullTime represents a time.Time that may be null.
+    type: object
+    x-go-package: database/sql
+  Tag:
+    description: Tag defines Tag for X509 Cert
+    properties:
+      DeletedAt:
+        $ref: '#/definitions/DeletedAt'
+      ID:
+        format: uint64
+        type: integer
+      certificates:
+        description: the List of Certificates for the tag
+        items:
+          $ref: '#/definitions/Certificate'
+        type: array
+        x-go-name: Certificates
+      description:
+        description: the Tag Description
+        type: string
+        x-go-name: Description
+      id:
+        $ref: '#/definitions/UUID'
+      name:
+        description: the Tag name
+        type: string
+        x-go-name: Name
+    type: object
+    x-go-package: github.com/vdbulcke/cert-manager/data
+  Tags:
+    description: Tags a list of Tag
+    items:
+      $ref: '#/definitions/Tag'
+    type: array
+    x-go-package: github.com/vdbulcke/cert-manager/data
+  UUID:
+    description: |-
+      A UUID is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC
+      4122.
+    items:
+      format: uint8
+      type: integer
+    type: array
+    x-go-package: github.com/google/uuid
+info:
+  description: Documentation for Tag API
+  title: of Tag API
+  version: 0.1.0
+paths:
+  /certificate/CreateCertificate:
+    post:
+      description: Return newly Created Certificate from the database
+      operationId: CreateCertificate
+      parameters:
+      - description: Certificate data structure to Create
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/APICertificateInput'
+      responses:
+        "200":
+          $ref: '#/responses/certificateResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "409":
+          $ref: '#/responses/certificateResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Certificate
+  /certificate/DeleteCertificateByID/{id}:
+    delete:
+      description: Deletes certificate from DB
+      operationId: DeleteCertificateByID
+      parameters:
+      - description: |-
+          The id of the certificate for which the operation relates
+          could be uuid or sha256 fingerprint
+        in: path
+        name: id
+        required: true
+        type: string
+        x-go-name: ID
+      responses:
+        "204":
+          $ref: '#/responses/noContentResponse'
+        "401":
+          $ref: '#/responses/errorResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Certificate
+  /certificate/DeleteCertificateTagsByID/{id}:
+    delete:
+      description: Return Delete Tags from Certificate
+      operationId: DeleteCertificateTagsByID
+      parameters:
+      - description: Tags data structure to Add or Remove from Certificate
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/APICertificateTagInput'
+      - description: |-
+          The id of the certificate for which the operation relates
+          could be uuid or sha256 fingerprint
+        in: path
+        name: id
+        required: true
+        type: string
+        x-go-name: ID
+      responses:
+        "202":
+          $ref: '#/responses/certificateResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "401":
+          $ref: '#/responses/errorResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Certificate
+  /certificate/GetCertificateByFingerprint/{id}:
+    get:
+      description: Return certificate from the database
+      operationId: GetCertificateByFingerprint
+      parameters:
+      - description: |-
+          The id of the certificate for which the operation relates
+          could be uuid or sha256 fingerprint
+        in: path
+        name: id
+        required: true
+        type: string
+        x-go-name: ID
+      responses:
+        "200":
+          $ref: '#/responses/certificateResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Certificate
+  /certificate/GetCertificateByID/{id}:
+    get:
+      description: Return certificate from the database
+      operationId: GetCertificateByID
+      parameters:
+      - description: |-
+          The id of the certificate for which the operation relates
+          could be uuid or sha256 fingerprint
+        in: path
+        name: id
+        required: true
+        type: string
+        x-go-name: ID
+      responses:
+        "200":
+          $ref: '#/responses/certificateResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Certificate
+  /certificate/ListCerts:
+    get:
+      description: Return a list of Certificates from the database
+      operationId: ListCerts
+      responses:
+        "200":
+          $ref: '#/responses/certificateListResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Certificate
+  /certificate/UpdateCertificateTag/{id}:
+    put:
+      description: Return updated certificate
+      operationId: UpdateCertificateTag
+      parameters:
+      - description: Tags data structure to Add or Remove from Certificate
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/APICertificateTagInput'
+      - description: |-
+          The id of the certificate for which the operation relates
+          could be uuid or sha256 fingerprint
+        in: path
+        name: id
+        required: true
+        type: string
+        x-go-name: ID
+      responses:
+        "202":
+          $ref: '#/responses/certificateResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "401":
+          $ref: '#/responses/errorResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Certificate
+  /tag/CreateTag:
+    post:
+      description: Return newly Updated Tag from the database
+      operationId: CreateTag
+      parameters:
+      - description: Tag data structure to Create
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/APITagInput'
+      responses:
+        "202":
+          $ref: '#/responses/tagResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Tag
+  /tag/DeleteTagByID/{id}:
+    delete:
+      description: Deletes Tags from DB (and all association)
+      operationId: DeleteTagByID
+      parameters:
+      - description: The id of the tag for which the operation relates
+        in: path
+        name: id
+        required: true
+        type: string
+        x-go-name: ID
+      responses:
+        "204":
+          $ref: '#/responses/noContentResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Tag
+  /tag/GetTagByID/{id}:
+    get:
+      description: Return tag from the database
+      operationId: GetTagByID
+      parameters:
+      - description: The id of the tag for which the operation relates
+        in: path
+        name: id
+        required: true
+        type: string
+        x-go-name: ID
+      responses:
+        "200":
+          $ref: '#/responses/tagResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Tag
+  /tag/GetTagByName/{name}:
+    get:
+      description: Return tag from the database
+      operationId: GetTagByName
+      parameters:
+      - description: The id of the tag for which the operation relates
+        in: path
+        name: name
+        required: true
+        type: string
+        x-go-name: Name
+      responses:
+        "200":
+          $ref: '#/responses/tagResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Tag
+  /tag/ListTags:
+    get:
+      description: Return tag from the database
+      operationId: ListTags
+      responses:
+        "200":
+          $ref: '#/responses/tagListResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Tag
+  /tag/UpdateTagDescription/{id}:
+    put:
+      description: Return newly Updated Tag from the database
+      operationId: CreateTag
+      parameters:
+      - description: Tag data structure to Create
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/APITagInput'
+      responses:
+        "202":
+          $ref: '#/responses/tagResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+      tags:
+      - Tag
+produces:
+- application/json
+responses:
+  certificateListResponse:
+    description: A list of certificates
+    schema:
+      items:
+        $ref: '#/definitions/Certificates'
+      type: array
+  certificateResponse:
+    description: Data structure representing a single certificate
+    schema:
+      $ref: '#/definitions/Certificate'
+  errorResponse:
+    description: Generic error message returned as a string
+    schema:
+      $ref: '#/definitions/GenericAPIError'
+  noContentResponse:
+    description: No content is returned by this API endpoint
+  tagListResponse:
+    description: A list of tags
+    schema:
+      items:
+        $ref: '#/definitions/Tags'
+      type: array
+  tagResponse:
+    description: Data structure representing a single tag
+    schema:
+      $ref: '#/definitions/Tag'
+schemes:
+- http
+swagger: "2.0"
