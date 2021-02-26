@@ -31,13 +31,14 @@ func (h *APITagHandler) CreateTag(rw http.ResponseWriter, r *http.Request) *api.
 		}
 	}
 
+	h.logger.Debug("CreateTag: tagInput", "tagInput", tagInput)
 	// setting default status code
 	statusCode := http.StatusCreated
 	var tag *data.Tag
 	var err error
 
 	// checking if the input contains description
-	if tagInput.Description != "" {
+	if tagInput.Description == "" {
 		tag, err = h.certBackend.CreateTag(tagInput.Name)
 		if err != nil {
 			if _, ok := err.(*data.DBObjectAlreadyExist); ok {
