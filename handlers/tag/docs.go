@@ -48,7 +48,7 @@ type tagResponseWrapper struct {
 	Body data.Tag
 }
 
-// swagger:parameters tagCertificate
+// swagger:parameters CreateTag
 type tagCreateParamsWrapper struct {
 	// Tag data structure to Create
 	// in: body
@@ -64,7 +64,7 @@ type tagDescriptionUpdateParamsWrapper struct {
 	Body APITagDescriptionInput
 }
 
-// swagger:parameters DeleteTagByID GetTagByID CreateTag
+// swagger:parameters DeleteTagByID GetTagByID
 type tagIDParamsWrapper struct {
 	// The id of the tag for which the operation relates
 	// in: path
