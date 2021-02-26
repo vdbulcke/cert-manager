@@ -11,7 +11,7 @@ import (
 // Certificate defines a X509 Cert
 // swagger:model
 type Certificate struct {
-	gorm.Model
+	// gorm.Model
 	// the id for the certifcate
 	//
 	// required: false

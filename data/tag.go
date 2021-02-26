@@ -10,7 +10,7 @@ import (
 // Tag defines Tag for X509 Cert
 // swagger:model
 type Tag struct {
-	gorm.Model
+	// gorm.Model
 	// the id for the Tag
 	//
 	// required: false
@@ -24,7 +24,6 @@ type Tag struct {
 	// the Tag Description
 	//
 	// required: false
-	// TODO: add validation max length 
 	Description string `json:"description" `
 
 	// the List of Certificates for the tag
