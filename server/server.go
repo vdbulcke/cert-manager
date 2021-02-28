@@ -52,27 +52,26 @@ func makeServer(l hclog.Logger, v *data.Validation, certBackend *data.CertBacken
 		Methods(http.MethodGet)
 
 	// POST
-	certAPIPost := apiRouter.Methods(http.MethodPost).Subrouter()
+	certAPIPost := apiRouter.Methods(http.MethodPost, http.MethodOptions).Subrouter()
 	certAPIPost.Handle(
 		"/certificate/CreateCertificate",
 		api.Handler{Handler: certHandler.CreateCertificate})
 	certAPIPost.Use(certHandler.MiddlewareValidateCertificateInput)
 
 	// PUT
-	apiRouter.Handle(
+	certAPIPut := apiRouter.Methods(http.MethodPut).Subrouter()
+
+	certAPIPut.Handle(
 		"/certificate/UpdateCertificateTag/{id}",
-		api.Handler{Handler: certHandler.UpdateCertificateTag}).
-		Methods(http.MethodPut).
-		Subrouter().
-		Use(certHandler.MiddlewareValidateCertificateTagInput)
+		api.Handler{Handler: certHandler.UpdateCertificateTag})
+	certAPIPut.Use(certHandler.MiddlewareValidateCertificateTagInput)
 
 	// DELETE
-	apiRouter.Handle(
+	certAPIDelete := apiRouter.Methods(http.MethodDelete).Subrouter()
+	certAPIDelete.Handle(
 		"/certificate/DeleteCertificateTagsByID/{id}",
-		api.Handler{Handler: certHandler.DeleteCertificateTagsByID}).
-		Methods(http.MethodDelete).
-		Subrouter().
-		Use(certHandler.MiddlewareValidateCertificateTagInput)
+		api.Handler{Handler: certHandler.DeleteCertificateTagsByID})
+	certAPIDelete.Use(certHandler.MiddlewareValidateCertificateTagInput)
 
 	apiRouter.Handle(
 		"/certificate/DeleteCertificateByID/{id}",
@@ -145,7 +144,17 @@ func makeServer(l hclog.Logger, v *data.Validation, certBackend *data.CertBacken
 	// CORS
 	//
 	// TODO: get cors from config
-	corsHandler := handlers.CORS(handlers.AllowedOrigins([]string{"*"}))
+	corsAllowedHeader := handlers.AllowedHeaders([]string{"X-Requested-With"})
+	corsAllowedOrigin := handlers.AllowedOrigins([]string{"*"})
+	corsAllowedMethod := handlers.AllowedMethods([]string{
+		http.MethodPost,
+		http.MethodGet,
+		http.MethodPut,
+		http.MethodConnect,
+		http.MethodOptions,
+		http.MethodHead,
+	})
+	corsHandler := handlers.CORS(corsAllowedMethod, corsAllowedOrigin, corsAllowedHeader)
 
 	//
 	// Http Server
